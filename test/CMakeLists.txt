@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.24)
 project(ut-tserver)
 
 add_executable(ut-tserver
-        main.cpp
-        ../server/TcpServer.cpp
-        ../client/HashEchoClient.cpp
-        ../util/logger.cpp
-        tests.cpp
+        src/main.cpp
+        src/tests.cpp
+        ../src/server/TcpServer.cpp
+        ../src/client/HashEchoClient.cpp
+        ../src/util/logger.cpp
 )
 
 include(FetchContent)

@@ -3,7 +3,7 @@
 //
 #include <gtest/gtest.h>
 
-#include "../util/util.h"
+#include "../../util/util.h"
 
 TEST(buff_split, pos) {
     char buf[100] = "11111111111111\n|11111111111222222|";

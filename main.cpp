@@ -8,8 +8,8 @@
 
 #include <sys/time.h>
 
-#include "client/HashEchoClient.h"
-#include "server/TcpServer.h"
+#include "src/client/HashEchoClient.h"
+#include "src/server/TcpServer.h"
 #include "util/logger.h"
 
 

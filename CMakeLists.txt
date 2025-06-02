@@ -6,13 +6,13 @@ project(tnetserver)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(tnetserver main.cpp
+        include/tserver.h
+        src/server/TcpServer.cpp
+        src/server/TcpServer.h
+        src/client/HashEchoClient.cpp
+        src/client/HashEchoClient.h
         util/logger.cpp
         util/logger.h
-        include/tserver.h
-        server/TcpServer.cpp
-        server/TcpServer.h
-        client/HashEchoClient.cpp
-        client/HashEchoClient.h
         util/util.cpp
         util/util.h)
 

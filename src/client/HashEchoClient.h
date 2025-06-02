@@ -9,7 +9,7 @@
 
 #include "Poco/Task.h"
 #include "Poco/TaskManager.h"
-#include "../include/tserver.h"
+#include "../../include/tserver.h"
 
 
 class HashEchoClient : public ConnClient {

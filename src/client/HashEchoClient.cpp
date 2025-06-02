@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
-#include <utility>
 #include <vector>
 
 #include <iomanip>
@@ -17,16 +16,13 @@
 #include <condition_variable>
 #include <cstring>
 #include <fcntl.h>
-#include <mutex>
-#include <sstream>
 #include <sys/epoll.h>
-#include <unordered_set>
 
+#include "../../include/tserver.h"
+#include "../../util/logger.h"
 #include "Poco/DigestEngine.h"
 #include "Poco/Task.h"
 #include "Poco/TaskManager.h"
-#include "../include/tserver.h"
-#include "../util/logger.h"
 
 #include "HashEchoClient.h"
 
