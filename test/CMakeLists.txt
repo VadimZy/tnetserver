@@ -4,9 +4,10 @@ project(ut-tserver)
 add_executable(ut-tserver
         src/main.cpp
         src/tests.cpp
-        ../src/server/TcpServer.cpp
-        ../src/client/HashEchoClient.cpp
-        ../src/util/logger.cpp
+        ../../src/server/TcpServer.cpp
+        ../../src/client/HashEchoClient.cpp
+        ../../src/client/DigestGenerators.cpp
+        ../../util/logger.cpp
 )
 
 include(FetchContent)

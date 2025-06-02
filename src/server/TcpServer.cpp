@@ -52,24 +52,23 @@ std::string epoll_names(int evt) {
     return ret += "]";
 }
 
-static void make_non_blocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-
 TcpServer::TcpServer(int port, std::unique_ptr<ClientFactory> cf) : clientFactory(std::move(cf)) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
 }
 
-TcpServer::~TcpServer() { std::cout << "in TCP destructor" << "\n"; }
+TcpServer::~TcpServer() { LOG_INFO("in Server destructor"); }
 
-void TcpServer::clientDisconnected(int fd) {
-    auto lk = std::scoped_lock(connMapMutex);
-    if (auto it = connMap.find(fd); it != connMap.end()) {
-        connDone.emplace_back(std::move(it->second));
-        connMap.erase(it);
+void TcpServer::cleanup() {
+    LOG_DEBUG("clients cleanup job");
+    for (auto iter = connDone.begin(); iter != connDone.end();) {
+        if ((*iter)->state() != ConnClient::State::RUNNING) {
+            LOG_DEBUG("removing client");
+            iter = connDone.erase(iter);
+        } else {
+            ++iter;
+        }
     }
 }
 
@@ -97,10 +96,10 @@ int TcpServer::run() {
     }
 
     std::vector<epoll_event> events(MAX_EVENTS);
-    LOG_INFO("Multithreaded Hash Echo server running on port %d", PORT);
+    LOG_INFO("Multithreaded HashEcho server running on port %d", PORT);
 
     while (!stop.load()) {
-        int n = epoll_wait(epoll_fd, events.data(), MAX_EVENTS, 1);
+        int n = epoll_wait(epoll_fd, events.data(), MAX_EVENTS, -1);
 
         if (n < 0) {
             stop.store(true);
@@ -108,8 +107,6 @@ int TcpServer::run() {
         }
 
         if (n == 0) {
-            auto lk = std::scoped_lock(connMapMutex);
-            connDone.clear();
             continue;
         }
 
@@ -123,33 +120,48 @@ int TcpServer::run() {
                 int client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_len);
 
                 if (client_fd != -1) {
-                    std::cout << "new client on port " << PORT << "...\n";
-                    make_non_blocking(client_fd);
+                    LOG_INFO("new client on port %d", PORT);
                     epoll_event client_event{};
                     client_event.events = EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
                     client_event.data.fd = client_fd;
                     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event);
                 } else {
-                    std::cout << "bad client_id: " << client_fd << "\n";
+                    LOG_ERROR("bad client_id:  %d", client_fd);
                 }
+
             } else if (cl_fd > 0) {
+
                 LOG_DEBUG("fd: %d, epoll events: %s", cl_fd, epoll_names(events[i].events).c_str());
-                auto lk = std::unique_lock(connMapMutex);
-                if (auto iter = connMap.find(cl_fd); iter != connMap.end()) {
-                    if (events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-                        LOG_INFO("terminating client on fd %d", cl_fd);
-                        iter->second->stop();
+
+                auto createClient = [&]() {                    LOG_INFO("creating new client on fd %d", cl_fd);
+                    auto client = clientFactory->create(cl_fd, *this);
+
+                    if (client->start() == 0) {
+                        connMap.emplace(cl_fd, std::shared_ptr<ConnClient>(clientFactory->create(cl_fd, *this)));
+                    } else {
+                        LOG_ERROR("new client on fd %d failed to start, deleting", cl_fd);
                     }
+                };
+
+                if (auto it = connMap.find(cl_fd); it != connMap.end()) {
+
+                    if (it->second->state() != ConnClient::State::RUNNING) {
+                        connDone.emplace_back(std::move(it->second));
+                        connMap.erase(it);
+                        createClient();
+                    }
+                    else if (events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+                        LOG_INFO("terminating client on fd %d", cl_fd);
+                        it->second->stop();
+                    } else {
+                        it->second->onData();
+                    }
+
                 } else {
-                    std::cout << "starting task on fd" << cl_fd << "...\n";
-                    auto [it, res] =
-                            connMap.emplace(cl_fd, std::shared_ptr<ConnClient>(clientFactory->create(cl_fd, *this)));
-                    auto &conn = it->second;
-                    lk.unlock();
-                    conn->start();
+                    createClient();
                 }
             } else {
-                std::cout << "event on invalid fd:" << cl_fd << "\n";
+                LOG_ERROR("event on invalid fd:  %d", cl_fd);
             }
         }
     }
@@ -158,7 +170,6 @@ int TcpServer::run() {
 }
 
 void TcpServer::shutdown() {
-
     stop.store(true);
     LOG_INFO("waiting server shutdown");
 }

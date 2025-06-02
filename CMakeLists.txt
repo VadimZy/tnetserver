@@ -14,7 +14,9 @@ add_executable(tnetserver main.cpp
         util/logger.cpp
         util/logger.h
         util/util.cpp
-        util/util.h)
+        util/util.h
+        src/client/DigestGenerators.cpp
+        src/client/DigestGenerators.h)
 
 include(FetchContent)
 

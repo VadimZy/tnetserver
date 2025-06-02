@@ -8,22 +8,22 @@
 #include <utility>
 
 #include "Poco/Task.h"
-#include "Poco/TaskManager.h"
 #include "../../include/tserver.h"
-
+#include <condition_variable>
 
 class HashEchoClient : public ConnClient {
 public:
-    HashEchoClient(int fd, ConnManager &m, std::unique_ptr<HashDigest> d) : connMgr(m), fd(fd), digest(std::move(d)) {}
+    HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d) : connMgr(m), fd(fd), digest(std::move(d)) {}
 
     ~HashEchoClient() override = default;
 
-    int start() override {
-        pool().start(new connHandler([this]() { this->handleIO(); }));
-        return 0;
-    }
+    int start() override;
 
     void stop() override;
+
+    void onData() override;
+
+    ConnClient::State state() const override;
 
 private:
     void handleIO();
@@ -43,7 +43,10 @@ private:
     ConnManager &connMgr;
     int fd{-1};
     std::atomic_bool terminate{false};
-    std::unique_ptr<HashDigest> digest;
+    std::condition_variable cv;
+    std::mutex cvMutex;
+    std::unique_ptr<StreamDigest> digest;
+    std::atomic<State> mState{State::CREATED};
 };
 
 class HashEchoClientFactory: public ClientFactory {

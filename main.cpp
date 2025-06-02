@@ -4,6 +4,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <sstream>
 #include <thread>
 
 #include <sys/time.h>
@@ -17,30 +18,36 @@ COMMON_LOGGER();
 
 
 namespace {
+
+    // logger function
     void log_function(const char *component, const char *message, util::log::log_severity sev) {
         struct timeval tv{};
         gettimeofday(&tv, nullptr);
-        char timeString[std::size("yyyy-mm-ddThh:mm:ss")];
-        std::strftime(std::data(timeString), std::size(timeString), "%FT%T", std::gmtime(&tv.tv_sec));
-
-        std::cout << timeString << "." << tv.tv_usec / 1000 << ", " << std::this_thread::get_id() << ", "
-                  << util::log::log_sink::LOG_LEVELS[sev - 1] << ", " << component << message << "\n";
+        char ts[std::size("yyyy-mm-ddThh:mm:ss")];
+        std::strftime(std::data(ts), std::size(ts), "%FT%T", std::gmtime(&tv.tv_sec));
+        std::stringstream ss;
+        ss << ts << "." << tv.tv_usec / 1000 << ", " << std::this_thread::get_id() << ", "
+           << util::log::log_sink::LOG_LEVELS[sev - 1] << ", " << component << message << "\n";
+        std::cout << ss.str();
     }
+
+    // file scope to clean up on exit
+    std::shared_ptr<TcpServer> gServer;
+
 } // namespace
 
-// cleanup on exit
-static std::shared_ptr<TcpServer> gServer;
 
 int main() {
 
+    // setup logger
     util::log::log_sink::init(log_function, "");
     util::log::log_sink::set_level("debug");
-    std::unique_ptr<ClientFactory> basePtr(reinterpret_cast<ClientFactory *>(new HashEchoClientFactory()));
 
-    gServer = std::make_shared<TcpServer>(2323, std::move(basePtr));
+    // create server
+    gServer = std::make_shared<TcpServer>(2323, std::make_unique<HashEchoClientFactory>());
 
     //
-    auto lam = [](int i) {
+    auto shutdown = [](int i) {
         std::cout << "on exit" << "\n";
         if (gServer) {
             gServer->shutdown();
@@ -49,10 +56,10 @@ int main() {
     };
 
     // signal handlers
-    signal(SIGINT, lam);
-    signal(SIGABRT, lam);
-    signal(SIGTERM, lam);
-    signal(SIGTSTP, lam);
+    signal(SIGINT, shutdown);
+    signal(SIGABRT, shutdown);
+    signal(SIGTERM, shutdown);
+    signal(SIGTSTP, shutdown);
 
     auto st = std::thread([&]() { gServer->run(); });
     st.join();

@@ -7,9 +7,8 @@
 namespace util {
     class BuffSplitter {
     public:
-        template<class T, unsigned char D = '\n'>
-        BuffSplitter(const T *buf, size_t len) {
-            auto sv = std::string_view(buf, len);
+        template<unsigned char D = '\n'>
+        explicit BuffSplitter(std::string_view sv) {
             if (auto pos = sv.find(D); pos != std::string_view::npos) {
                 svl = sv.substr(0, pos);
                 svr = sv.substr(pos + 1);
@@ -19,7 +18,7 @@ namespace util {
             }
         }
 
-        bool has_split() {
+        bool has_split() const {
             return split;
         }
 

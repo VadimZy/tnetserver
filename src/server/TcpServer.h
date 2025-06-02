@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <netinet/in.h>
@@ -16,18 +17,18 @@ public:
 
     ~TcpServer() override;
 
-    void clientDisconnected(int fd) override;
+    void clientDisconnected(int fd) override{};
 
     int run();
     void shutdown();
 
 private:
+    void cleanup();
     sockaddr_in addr{};
     int server_fd{-1};
     int epoll_fd{-1};
     std::unordered_map<int, std::shared_ptr<ConnClient>> connMap{};
-    std::vector<std::shared_ptr<ConnClient>> connDone;
-    std::mutex connMapMutex{};
+    std::list<std::shared_ptr<ConnClient>> connDone;
 
     std::atomic<bool> stop{false};
     std::unique_ptr<ClientFactory> clientFactory;

@@ -26,33 +26,43 @@
 
 #include "HashEchoClient.h"
 
+#include "DigestGenerators.h"
 #include "Poco/MD5Engine.h"
 
 
 COMMON_LOGGER();
 
-class MD5Digest : public HashDigest {
-public:
-    MD5Digest() = default;
 
-    void update(void *buff, size_t len) override { engine.update(buff, len); }
+int HashEchoClient::start() {
 
-    std::string to_hex_string() override {
-        auto ret{Poco::DigestEngine::digestToHex(engine.digest())};
-        engine.reset();
-        return ret;
-    };
+    auto c = pool().count();
+    try {
+        pool().start(new connHandler([this]() { this->handleIO(); }));
+        mState =  State::RUNNING;
+    } catch (const std::exception &e) {
+        LOG_ERROR("Exception while starting hash echo client: %s", e.what());
+        close(fd);
+        mState = State::FAILED;
+        return -1;
+    }
 
-    ~MD5Digest() override = default;
-
-private:
-    Poco::MD5Engine engine;
-};
-
+    LOG_INFO("fd: %d, starting client task, before: %d, after: %d", fd, c, pool().count());
+    return 0;
+}
 
 void HashEchoClient::stop() {
     LOG_INFO("fd: %d, stopping client", fd);
     terminate.store(true);
+    cv.notify_one();
+}
+
+void HashEchoClient::onData() {
+    LOG_INFO("fd: %d, data", fd);
+    cv.notify_one();
+}
+
+ConnClient::State HashEchoClient::state() const {
+    return mState;
 }
 
 void HashEchoClient::handleIO() {
@@ -60,11 +70,14 @@ void HashEchoClient::handleIO() {
 
     using namespace std::chrono_literals;
     while (!terminate.load()) {
-        char buffer[1024];
+        char buffer[10];
+
         ssize_t count = read(fd, buffer, sizeof(buffer));
         if (count <= 0) {
             if (errno == EAGAIN) {
-                std::this_thread::sleep_for(100ms);
+                auto lk = std::unique_lock(cvMutex);
+                //cv.wait(lk);
+                //LOG_INFO("fd: %d, read error: %s", fd, strerror(errno));
                 continue;
             }
             LOG_INFO("fd: %d, read error: %s", fd, strerror(errno));
@@ -72,30 +85,19 @@ void HashEchoClient::handleIO() {
             connMgr.clientDisconnected(fd);
             break;
         }
-        auto sv = std::string_view(buffer, count);
-        std::string_view svl, svr;
-        if (auto pos = sv.find('\n'); pos != std::string_view::npos) {
-            svl = sv.substr(0, pos);
-            svr = svr.substr(pos + 1);
-        }
 
         LOG_DEBUG("fd: %d, read size:%ld ", fd, count);
-
-        auto pos = std::find(buffer, buffer + count, '\n');
-        if (pos < buffer + count) {
-            digest->update(buffer, pos - buffer);
-
-            auto dd = digest->to_hex_string();
-            dd += "\n";
-            LOG_DEBUG("fd: %d, sending digest:: %s", fd, dd.c_str());
-            digest->update(pos + 1, count - (pos - buffer));
-            write(fd, dd.data(), dd.size()); // Echo back
-        } else {
-            digest->update(buffer, count);
-        }
+        auto write_hash = [this](std::string s) {
+            LOG_DEBUG("fd: %d, echoing hash: %s ", fd, s.c_str());
+            write(fd, s.data(), s.size());
+            return 0;
+        };
+        digest->append(write_hash, {buffer, (size_t) count});
     }
+
     LOG_INFO("fd: %d, completed client", fd);
     close(this->fd);
+    mState =  State::COMPLETED;
 }
 
 Poco::TaskManager &HashEchoClient::pool() {
@@ -103,6 +105,7 @@ Poco::TaskManager &HashEchoClient::pool() {
     return tm;
 }
 
+
 ConnClient *HashEchoClientFactory::create(int fd, ConnManager &m) {
-    return new HashEchoClient(fd, m, std::make_unique<MD5Digest>());
+    return new HashEchoClient(fd, m, std::make_unique<StreamMD5Digest>('n'));
 }
