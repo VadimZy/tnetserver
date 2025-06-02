@@ -18,8 +18,8 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 
-#include "../../include/tserver.h"
-#include "../../util/logger.h"
+#include "../include/tserver.h"
+#include "../util/logger.h"
 #include "Poco/DigestEngine.h"
 #include "Poco/Task.h"
 #include "Poco/TaskManager.h"

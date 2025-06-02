@@ -9,9 +9,9 @@
 
 #include <sys/time.h>
 
-#include "src/client/HashEchoClient.h"
-#include "src/server/TcpServer.h"
-#include "util/logger.h"
+#include "../util/logger.h"
+#include "HashEchoClient.h"
+#include "TcpServer.h"
 
 
 COMMON_LOGGER();

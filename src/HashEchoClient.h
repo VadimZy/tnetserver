@@ -7,9 +7,9 @@
 #include <thread>
 #include <utility>
 
-#include "Poco/Task.h"
-#include "../../include/tserver.h"
 #include <condition_variable>
+#include "../include/tserver.h"
+#include "Poco/Task.h"
 
 class HashEchoClient : public ConnClient {
 public:

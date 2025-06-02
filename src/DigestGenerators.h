@@ -4,7 +4,7 @@
 
 #pragma once
 #include <string_view>
-#include "../../include/tserver.h"
+#include "../include/tserver.h"
 #include "Poco/MD5Engine.h"
 
 class MD5Digest : public HashDigest {

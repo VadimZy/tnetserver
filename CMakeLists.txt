@@ -5,18 +5,6 @@ project(tnetserver)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(tnetserver main.cpp
-        include/tserver.h
-        src/server/TcpServer.cpp
-        src/server/TcpServer.h
-        src/client/HashEchoClient.cpp
-        src/client/HashEchoClient.h
-        util/logger.cpp
-        util/logger.h
-        util/util.cpp
-        util/util.h
-        src/client/DigestGenerators.cpp
-        src/client/DigestGenerators.h)
 
 include(FetchContent)
 
@@ -34,6 +22,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(poco)
 
-
-target_link_libraries(tnetserver PRIVATE Poco::Foundation ssl crypto)
-
+add_subdirectory(src)
+add_subdirectory(test)

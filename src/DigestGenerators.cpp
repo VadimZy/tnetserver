@@ -3,7 +3,7 @@
 //
 #include "DigestGenerators.h"
 
-#include "../../util/util.h"
+#include "../util/util.h"
 
 
 void StreamMD5Digest::append(std::function<int(std::string)> acceptor, std::string_view buf) {
