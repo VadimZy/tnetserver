@@ -124,9 +124,13 @@ public:
         }
     }
 
-    std::string sendToServer(const std::string &str) {
+    std::string sendToServer(const std::string &str, int cnt = 1) {
         std::stringstream ss;
         ss << "echo " << str << " | nc localhost " << port;
+        for (int i = 1; i < cnt; ++i) {
+            ss << "& echo " << str << " | nc localhost " << port;
+        }
+
         std::string result{};
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(ss.str().c_str(), "r"), pclose);
         if (!pipe) {
@@ -152,10 +156,17 @@ private:
 };
 
 // hex helper
-auto to_hex(const std::string& s) {
+auto to_hex(const std::string &s, int cnt = 1) {
     MD5Digest md5;
     md5.update(s);
-    return md5.to_hex_string();
+    auto h = md5.to_hex_string();
+    auto ret = h + '\n';
+
+    for (int i = 1; i < cnt; ++i) {
+        ret += h;
+        ret += '\n';
+    }
+    return ret;
 }
 
 // smoke test
@@ -181,13 +192,13 @@ TEST(server, simple) {
     srv.stop();
 }
 
-// 100 concurrent short strings
+// 100 concurrent short strings, 3 connections
 TEST(server, fuzz) {
     TestTcpServer srv(2323);
     //srv.start();
     using namespace std::chrono_literals;
     std::string tStr{8, 'q'};
-    auto hex = to_hex(tStr);
+    auto hex = to_hex(tStr, 3);
 
     std::vector<std::string> results;
     std::mutex mtx;
@@ -198,7 +209,7 @@ TEST(server, fuzz) {
     for (int i = 0; i < 100; i++) {
         cmdThreads.emplace_back([&]() {
             auto lk = std::lock_guard(mtx);
-            results.emplace_back( srv.sendToServer(tStr));
+            results.emplace_back(srv.sendToServer(tStr, 3));
         });
     }
 
@@ -208,7 +219,7 @@ TEST(server, fuzz) {
 
     auto good{false};
 
-    for ( const auto& r: results) {
+    for (const auto &r: results) {
         good = hex == r;
         if (!good) {
             LOG_ERROR("md5 failed: result: %s, expected: %s", r.c_str(), hex.c_str());
@@ -220,13 +231,13 @@ TEST(server, fuzz) {
     srv.stop();
 }
 
-// 100 concurrent long strings
+// 100 concurrent long strings, 10 connections
 TEST(server, fuzz1) {
     TestTcpServer srv(2323);
     //srv.start();
     using namespace std::chrono_literals;
     std::string tStr(4000, 'q');
-    auto hex = to_hex(tStr);
+    auto hex = to_hex(tStr,10);
 
     std::vector<std::string> results;
     std::mutex mtx;
@@ -237,7 +248,7 @@ TEST(server, fuzz1) {
     for (int i = 0; i < 100; i++) {
         cmdThreads.emplace_back([&]() {
             auto lk = std::lock_guard(mtx);
-            results.emplace_back( srv.sendToServer(tStr));
+            results.emplace_back(srv.sendToServer(tStr,10));
         });
     }
 
@@ -247,7 +258,7 @@ TEST(server, fuzz1) {
 
     auto good{false};
 
-    for ( const auto& r: results) {
+    for (const auto &r: results) {
         good = hex == r;
         if (!good) {
             LOG_ERROR("md5 failed: result: %s, expected: %s", r.c_str(), hex.c_str());

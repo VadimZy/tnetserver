@@ -13,9 +13,9 @@
 
 class HashEchoClient : public ConnClient {
 public:
-    HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d) : connMgr(m), fd(fd), digest(std::move(d)) {}
+    HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d);
 
-    ~HashEchoClient() override = default;
+    ~HashEchoClient() override;
 
     int start() override;
 
@@ -28,28 +28,21 @@ public:
 private:
     void handleIO();
 
-    struct connHandler : public Poco::Task {
-        explicit connHandler(std::function<void()> f) : Task("connection"), fn(std::move(f)) {}
-
-        ~connHandler() override = default;
-
-        void runTask() override { fn(); }
-
-        std::function<void()> fn{nullptr};
-    };
-
     static Poco::TaskManager &pool();
 
     ConnManager &connMgr;
     int fd{-1};
     std::atomic_bool terminate{false};
-    std::condition_variable cv;
-    std::mutex cvMutex;
     std::unique_ptr<StreamDigest> digest;
     std::atomic<State> mState{State::CREATED};
+    static uint64_t nextId() {
+        static std::atomic<uint64_t> _{0};
+        return _.fetch_add(1);
+    }
+    uint64_t id{0};
 };
 
-class HashEchoClientFactory: public ClientFactory {
+class HashEchoClientFactory : public ClientFactory {
 public:
     ~HashEchoClientFactory() override = default;
     ConnClient *create(int fd, ConnManager &m) override;

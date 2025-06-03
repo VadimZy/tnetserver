@@ -7,9 +7,10 @@
 #include <sstream>
 #include <thread>
 
-#include <sys/time.h>
+#include <Poco/Util/IniFileConfiguration.h>
 
 #include "../util/logger.h"
+#include "../util/Configuration.h"
 #include "HashEchoClient.h"
 #include "TcpServer.h"
 
@@ -25,11 +26,16 @@ namespace {
 } // namespace
 
 
+
 int main() {
+
+
 
     // setup logger
     util::log::log_sink::use_console_log();
     util::log::log_sink::set_level("debug");
+
+    util::Configuration::instance().loadFile(".tserver.cfg");
 
     // create server
     gServer = std::make_shared<TcpServer>(2323, std::make_unique<HashEchoClientFactory>());

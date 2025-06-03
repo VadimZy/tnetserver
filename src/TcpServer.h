@@ -24,8 +24,10 @@ private:
     sockaddr_in addr{};
     int server_fd{-1};
     int epoll_fd{-1};
-    std::unordered_map<int, std::shared_ptr<ConnClient>> connMap{};
-    std::list<std::shared_ptr<ConnClient>> connDone;
+
+    std::unordered_map<int, std::shared_ptr<ConnClient>> newClients{};
+    std::unordered_map<int, std::shared_ptr<ConnClient>> runClients{};
+    std::list<std::shared_ptr<ConnClient>> doneClients;
 
     std::atomic<bool> stop{false};
     std::unique_ptr<ClientFactory> clientFactory;

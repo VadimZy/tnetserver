@@ -8,6 +8,8 @@ add_executable(ut-tserver
         ../../src/HashEchoClient.cpp
         ../../src/DigestGenerators.cpp
         ../../util/logger.cpp
+        ../util/Configuration.cpp
+        ../util/Configuration.h
 )
 
 include(FetchContent)
@@ -27,4 +29,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(poco)
 
 
-target_link_libraries(ut-tserver PRIVATE gtest Poco::Foundation ssl crypto)
+target_link_libraries(ut-tserver PRIVATE gtest Poco::Foundation Poco::Util ssl crypto)

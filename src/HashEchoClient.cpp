@@ -26,6 +26,7 @@
 
 #include "HashEchoClient.h"
 
+#include "../util/Configuration.h"
 #include "DigestGenerators.h"
 #include "Poco/MD5Engine.h"
 
@@ -33,79 +34,71 @@
 COMMON_LOGGER();
 
 
+HashEchoClient::HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d) :
+    connMgr(m), fd(fd), digest(std::move(d)), id(nextId()) {
+    LOG_INFO("client: %lu, id, fd: %d, constructing", id, fd);
+}
+
+HashEchoClient::~HashEchoClient() { std::cout << "dtor client: " << id << "\n"; }
+
 int HashEchoClient::start() {
 
-    auto c = pool().count();
-    try {
-        pool().start(new connHandler([this]() { this->handleIO(); }));
-        mState =  State::RUNNING;
-    } catch (const std::exception &e) {
-        LOG_ERROR("Exception while starting hash echo client: %s", e.what());
-        close(fd);
-        mState = State::FAILED;
-        return -1;
-    }
-
-    LOG_INFO("fd: %d, starting client task, before: %d, after: %d", fd, c, pool().count());
+    handleIO();
     return 0;
 }
 
 void HashEchoClient::stop() {
-    LOG_INFO("fd: %d, stopping client", fd);
+    LOG_INFO("client: %lu, id, fd: %d, stopping client", id, fd);
     terminate.store(true);
-    cv.notify_one();
 }
 
-void HashEchoClient::onData() {
-    LOG_INFO("fd: %d, data", fd);
-    cv.notify_one();
-}
+void HashEchoClient::onData() { LOG_INFO("client: %lu, id, fd: %d, data", id, fd); }
 
-ConnClient::State HashEchoClient::state() const {
-    return mState;
-}
+ConnClient::State HashEchoClient::state() const { return mState; }
 
 void HashEchoClient::handleIO() {
-    LOG_INFO("fd: %d, starting IO task", fd);
 
-    using namespace std::chrono_literals;
+    static size_t buffSize = util::Configuration::instance().readBufferSize();
+    std::vector<char> buffer(buffSize);
+
+    LOG_INFO("client: %lu, id, fd: %d, starting IO task", id, fd);
+
     while (!terminate.load()) {
-        char buffer[10];
 
-        ssize_t count = read(fd, buffer, sizeof(buffer));
+        auto count = read(fd, buffer.data(), buffSize);
         if (count <= 0) {
+
             if (errno == EAGAIN) {
-                auto lk = std::unique_lock(cvMutex);
-                //cv.wait(lk);
-                //LOG_INFO("fd: %d, read error: %s", fd, strerror(errno));
                 continue;
             }
-            LOG_INFO("fd: %d, read error: %s", fd, strerror(errno));
-            close(this->fd);
-            connMgr.clientDisconnected(fd);
+
+            LOG_INFO("client: %lu, id, fd: %d, read condition: %s", id, fd, strerror(errno));
             break;
         }
 
-        LOG_DEBUG("fd: %d, read size:%ld ", fd, count);
+        LOG_DEBUG("client: %lu, id, fd: %d, read size:%ld ", id, fd, count);
+
         auto write_hash = [this](std::string s) {
-            LOG_DEBUG("fd: %d, echoing hash: %s ", fd, s.c_str());
+            LOG_DEBUG("client: %lu, id, fd: %d, echoing hash: %s ", id, fd, s.c_str());
+            s += '\n';
             write(fd, s.data(), s.size());
             return 0;
         };
-        digest->append(write_hash, {buffer, (size_t) count});
+
+        digest->append(write_hash, {buffer.data(), buffSize});
     }
 
-    LOG_INFO("fd: %d, completed client", fd);
-    close(this->fd);
-    mState =  State::COMPLETED;
-}
+    close(fd);
 
-Poco::TaskManager &HashEchoClient::pool() {
-    static Poco::TaskManager tm{"connections", 2, static_cast<int>(std::thread::hardware_concurrency())};
-    return tm;
+    LOG_INFO("client: %lu, id, fd: %d, completed", id, fd);
+    mState = State::COMPLETED;
 }
 
 
 ConnClient *HashEchoClientFactory::create(int fd, ConnManager &m) {
-    return new HashEchoClient(fd, m, std::make_unique<StreamMD5Digest>('n'));
+
+    if (util::Configuration::instance().hashType() == "md5") {
+        return new HashEchoClient(fd, m, std::make_unique<StreamMD5Digest>('n'));
+    }
+    throw std::runtime_error(util::Configuration::instance().hashType() + " not supported");
 }

@@ -4,6 +4,8 @@
 #pragma once
 #include <string_view>
 
+#include "Poco/Util/IniFileConfiguration.h"
+
 namespace util {
     class BuffSplitter {
     public:
