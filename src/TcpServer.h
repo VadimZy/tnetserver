@@ -3,11 +3,8 @@
 #include <atomic>
 #include <list>
 #include <memory>
-#include <mutex>
 #include <netinet/in.h>
-#include <thread>
 #include <unordered_map>
-#include <vector>
 
 #include "../include/tserver.h"
 

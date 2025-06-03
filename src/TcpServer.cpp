@@ -27,6 +27,7 @@
 
 COMMON_LOGGER();
 
+// log helper function
 std::string epoll_names(int evt) {
     static std::vector<unsigned> epoll_events{
             EPOLLIN,  EPOLLPRI, EPOLLOUT,   EPOLLRDNORM,    EPOLLRDBAND, EPOLLWRNORM,  EPOLLWRBAND, EPOLLMSG,
@@ -52,14 +53,17 @@ std::string epoll_names(int evt) {
     return ret += "]";
 }
 
+// ctor
 TcpServer::TcpServer(int port, std::unique_ptr<ClientFactory> cf) : clientFactory(std::move(cf)) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
 }
 
+// dtor
 TcpServer::~TcpServer() { LOG_INFO("in Server destructor"); }
 
+// garbage collector
 void TcpServer::cleanup() {
     LOG_DEBUG("clients cleanup job");
     for (auto iter = connDone.begin(); iter != connDone.end();) {
@@ -73,26 +77,33 @@ void TcpServer::cleanup() {
 }
 
 int TcpServer::run() {
+    auto logErrorThrow = [] (const char* msg) {
+        std::string err(strerror(errno));
+        LOG_ERROR("%s error: %s", msg, err.c_str());
+        throw std::runtime_error(std::string(msg) +": " + err);
+    };
+
     if (server_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0); server_fd < 0) {
-        return -1;
+        logErrorThrow("create server socket");
     }
 
     if (bind(server_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
-        return -1;
+        logErrorThrow("server socket bind");
     }
 
     if (listen(server_fd, SOMAXCONN) < 0) {
+        logErrorThrow("server socket listen");
         return -1;
     }
 
-    if (epoll_fd = epoll_create1(O_CLOEXEC); epoll_fd < 0) {
-        return -1;
+    if (epoll_fd = epoll_create1(0); epoll_fd < 0) {
+        logErrorThrow("server epoll_create1");
     }
 
     epoll_event event{.events = EPOLLIN, .data = {.fd = server_fd}};
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event) < 0) {
-        return -1;
+        logErrorThrow("server epoll_control");
     }
 
     std::vector<epoll_event> events(MAX_EVENTS);
@@ -166,10 +177,11 @@ int TcpServer::run() {
         }
     }
     close(server_fd);
+    server_fd = -1;
     return 0;
 }
 
 void TcpServer::shutdown() {
     stop.store(true);
-    LOG_INFO("waiting server shutdown");
+    LOG_INFO("waiting for server shutdown");
 }

@@ -6,11 +6,14 @@
 #include <gtest/gtest.h>
 
 #include <bits/ostream.tcc>
+#include "../../util/logger.h"
 
 namespace testing {
     class TestPartResult;
     class TestInfo;
 }
+
+COMMON_LOGGER();
 
 class EventListener : public ::testing::EmptyTestEventListener {
 public:
@@ -38,17 +41,20 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    std::cout << "Hello Test World!" << std::endl;
+
+    // setup logger
+    util::log::log_sink::use_console_log();
+    util::log::log_sink::set_level("debug");
+
+    LOG_INFO("Starting testing");
+
     testing::InitGoogleTest(&argc, argv);
 
+    // test helpers
     ::testing::TestEventListeners &listeners = ::testing::UnitTest::GetInstance()->listeners();
     listeners.Append(new EventListener());
-
     ::testing::AddGlobalTestEnvironment(new UtEnvironment());
-    const int exit_status = RUN_ALL_TESTS();
 
-    //google::protobuf::ShutdownProtobufLibrary();
-
-    return exit_status;
-    return 0;
+    // run tests
+    return RUN_ALL_TESTS();
 }

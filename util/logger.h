@@ -31,6 +31,7 @@ namespace util::log {
         static void init(log_fn_t f, const std::string &component = {});
 
         static bool set_level(std::string level);
+        static void use_console_log();
 
         static bool is_enabled(log_severity sev) { return log_fn != nullptr && sev <= severity; }
 

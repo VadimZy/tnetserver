@@ -6,7 +6,10 @@
 
 
 #include <filesystem>
+#include <iostream>
 #include <memory>
+#include <sys/time.h>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -79,6 +82,20 @@ namespace util::log {
             }
         }
         return false;
+    }
+    void log_sink::use_console_log() {
+        log_fn = []
+                // logger function
+                (const char *component, const char *message, util::log::log_severity sev) {
+                    struct timeval tv{};
+                    gettimeofday(&tv, nullptr);
+                    char ts[std::size("yyyy-mm-ddThh:mm:ss")];
+                    std::strftime(std::data(ts), std::size(ts), "%FT%T", std::gmtime(&tv.tv_sec));
+                    std::stringstream ss;
+                    ss << ts << "." << tv.tv_usec / 1000 << ", " << std::this_thread::get_id() << ", "
+                       << util::log::log_sink::LOG_LEVELS[sev - 1] << ", " << component << message << "\n";
+                    std::cout << ss.str();
+                };
     }
 
     void log_sink::log(log_severity sev, int line, const std::string &msg) const {
