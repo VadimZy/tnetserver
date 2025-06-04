@@ -14,7 +14,7 @@ A simple TCP ipv4 server that listens on a configured port (default: 2323) and r
 
 > Dependencies
 
-The build brings:
+build brings:
 - C++ Poco library 1.14.2, used for
    - Hash calculations
    - Configuration
@@ -22,3 +22,14 @@ The build brings:
 
 - googletest 1.14.0 
   - unit testing
+
+> Running build
+
+```bash
+[tnetserver]$ mkdir build
+[tnetserver]$ cd build/
+[build]$ cmake ..
+[build]$ make -j10
+```
+
+Build puts the artefacts into ./bin directory 
