@@ -31,6 +31,7 @@ namespace util {
         int epollEventsNum_{1};
         std::string hashType_{"md5"};
         int readBufferSize_{1024};
+        std::string logLevel_{"debug"};
     };
     ;
 

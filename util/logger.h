@@ -8,7 +8,7 @@
 #include <string>
 
 namespace util::log {
-    typedef enum log_severity {
+    typedef enum logSeverity {
         LOG_SEV_FATAL = 1,
         LOG_SEV_CRITICAL = 2,
         LOG_SEV_ERROR = 3,
@@ -19,46 +19,47 @@ namespace util::log {
         LOG_SEV_TRACE = 8,
     } log_severity;
 
-    using log_fn_t = std::function<void(const char *component, const char *message, log_severity severity)>;
+    using logFn_t = std::function<void(const char *component, const char *message, log_severity severity)>;
 
-    class log_sink {
+    class logSink {
     public:
         static constexpr std::array<const char *, 8> LOG_LEVELS{"FATAL",  "CRITICAL", "ERROR", "WARNING",
                                                                 "NOTICE", "INFO",     "DEBUG", "TRACE"};
 
-        explicit log_sink(const char *fn);
+        explicit logSink(const char *fn);
 
-        static void init(log_fn_t f, const std::string &component = {});
+        static void init(logFn_t f, const std::string &component = {});
 
-        static bool set_level(std::string level);
-        static void use_console_log();
+        static bool setLevel(std::string level);
+        static void useConsoleLog();
 
-        static bool is_enabled(log_severity sev) { return log_fn != nullptr && sev <= severity; }
+        static bool isEnabled(logSeverity sev) { return logFn != nullptr && sev <= severity; }
 
-        void log(log_severity sev, int line, const char *fmt, ...) const __attribute__((format(printf, 4, 5)));
+        void log(logSeverity sev, int line, const char *fmt, ...) const __attribute__((format(printf, 4, 5)));
 
-        void log(log_severity sev, int line, const std::string &msg) const;
+        void log(logSeverity sev, int line, const std::string &msg) const;
 
     private:
-        void logv(log_severity sev, int line, const char *fmt, va_list &args) const;
+        void logv(logSeverity sev, int line, const char *fmt, va_list &args) const;
 
-        const std::string file_name{};
+        const std::string fileName{};
 
-        inline static log_severity severity{LOG_SEV_INFO};
-        inline static log_fn_t log_fn{nullptr};
+        inline static logSeverity severity{LOG_SEV_INFO};
+        inline static logFn_t logFn{nullptr};
         inline static std::string component;
     };
+
 } // namespace util::log
 
 // Make an instance of a logger in a component that will always print
 // the filename and the line number. If prefix is provided then that will
 // proceed the filename.
-#define COMMON_LOGGER() static const util::log::log_sink s_log_sink(__FILE__)
+#define COMMON_LOGGER() static const util::log::logSink sLogSink(__FILE__)
 
 #define LOG_AT_PRIO_(priority, ...)                                                                                    \
     do {                                                                                                               \
-        if (s_log_sink.is_enabled(priority)) {                                                                         \
-            s_log_sink.log((priority), __LINE__, __VA_ARGS__);                                                         \
+        if (sLogSink.isEnabled(priority)) {                                                                            \
+            sLogSink.log((priority), __LINE__, __VA_ARGS__);                                                           \
         }                                                                                                              \
     } while (false)
 

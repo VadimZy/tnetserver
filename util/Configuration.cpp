@@ -39,6 +39,7 @@ namespace util {
         readVal(epollEventsNum_, RFN(getInt), "server.epoll_events_num");
         readVal(readBufferSize_, RFN(getInt), "server.read_buffer_size");
         readVal(hashType_, RFN(getString), "server.hash_type");
+        readVal(logLevel_, RFN(getString), "log.level");
 
     }
 } // namespace util

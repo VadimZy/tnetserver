@@ -24,49 +24,49 @@ namespace util::log {
     }
 
     // log string generating
-    void log_sink::logv(log_severity sev, const int line_no, const char *fmt, va_list &args) const {
-        auto try_print = [&](auto &buffer, size_t buff_size) {
-            va_list mutable_args;
-            va_copy(mutable_args, args);
+    void logSink::logv(logSeverity sev, const int line_no, const char *fmt, va_list &args) const {
+        auto tryPrint = [&](auto &buffer, size_t buffSize) {
+            va_list mutableArgs;
+            va_copy(mutableArgs, args);
 
             std::string::size_type pfix_len = 0;
 
             if (line_no) {
                 // Try to write the prefix to log_buffer
-                pfix_len = std::snprintf(&buffer[0], buff_size, "%s: ", mk_prefix(file_name, line_no).c_str());
+                pfix_len = std::snprintf(&buffer[0], buffSize, "%s: ", mk_prefix(fileName, line_no).c_str());
             }
 
             // if we don't have room use nullptr to calculate required buff size
-            auto msg_len = std::vsnprintf(pfix_len < buff_size ? &buffer[pfix_len] : nullptr, buff_size - pfix_len, fmt,
-                                          mutable_args);
+            auto msg_len = std::vsnprintf(pfix_len < buffSize ? &buffer[pfix_len] : nullptr, buffSize - pfix_len, fmt,
+                                          mutableArgs);
 
-            va_end(mutable_args);
+            va_end(mutableArgs);
 
             // One extra byte needed for the NUL terminator
             return pfix_len + msg_len + 1;
         };
 
         // try to fill fixed len array on the stack
-        std::array<char, DEFAULT_LOG_STR_LENGTH> arr_buffer{};
-        auto msg_len = try_print(arr_buffer, DEFAULT_LOG_STR_LENGTH);
+        std::array<char, DEFAULT_LOG_STR_LENGTH> arrBuffer{};
+        auto msg_len = tryPrint(arrBuffer, DEFAULT_LOG_STR_LENGTH);
 
         if (msg_len <= DEFAULT_LOG_STR_LENGTH) {
-            log_fn(component.c_str(), arr_buffer.data(), sev);
+            logFn(component.c_str(), arrBuffer.data(), sev);
         } else {
             // go for the heap
-            std::vector<char> log_buffer(msg_len);
-            try_print(log_buffer, msg_len);
-            log_fn(component.c_str(), log_buffer.data(), sev);
+            std::vector<char> logBuffer(msg_len);
+            tryPrint(logBuffer, msg_len);
+            logFn(component.c_str(), logBuffer.data(), sev);
         }
     }
 
-    void log_sink::init(log_fn_t f, const std::string &comp) {
-        log_fn = std::move(f);
+    void logSink::init(logFn_t f, const std::string &comp) {
+        logFn = std::move(f);
         component = comp;
     }
 
-    void log_sink::log(log_severity sev, int line, const char *fmt, ...) const {
-        if (!is_enabled(sev)) {
+    void logSink::log(logSeverity sev, int line, const char *fmt, ...) const {
+        if (!isEnabled(sev)) {
             return;
         }
 
@@ -76,11 +76,11 @@ namespace util::log {
         va_end(args);
     }
 
-    bool log_sink::set_level(std::string level) {
+    bool logSink::setLevel(std::string level) {
         std::transform(level.begin(), level.end(), level.begin(), ::toupper);
         for (int i = 0; i < sizeof(LOG_LEVELS); ++i) {
             if (level == LOG_LEVELS[i]) {
-                severity = static_cast<log_severity>(i + 1);
+                severity = static_cast<logSeverity>(i + 1);
                 return true;
             }
         }
@@ -88,10 +88,10 @@ namespace util::log {
     }
 
     // default log sink
-    void log_sink::use_console_log() {
-        log_fn = []
+    void logSink::useConsoleLog() {
+        logFn = []
                 // logger function
-                (const char *component, const char *message, util::log::log_severity sev) {
+                (const char *component, const char *message, util::log::logSeverity sev) {
                     struct timeval tv{};
                     gettimeofday(&tv, nullptr);
                     char ts[std::size("yyyy-mm-ddThh:mm:ss")];
@@ -104,17 +104,17 @@ namespace util::log {
                 };
     }
 
-    void log_sink::log(log_severity sev, int line, const std::string &msg) const {
-        if (!is_enabled(sev)) {
+    void logSink::log(logSeverity sev, int line, const std::string &msg) const {
+        if (!isEnabled(sev)) {
             return;
         }
         std::string out{};
         out.reserve(msg.size() + 128);
-        out += mk_prefix(file_name, line);
+        out += mk_prefix(fileName, line);
         out += ": ";
         out += msg;
-        log_fn(component.c_str(), out.c_str(), sev);
+        logFn(component.c_str(), out.c_str(), sev);
     }
 
-    log_sink::log_sink(const char *fn) : file_name(std::filesystem::path(fn).filename()) {}
+    logSink::logSink(const char *fn) : fileName(std::filesystem::path(fn).filename()) {}
 } // namespace util::log
