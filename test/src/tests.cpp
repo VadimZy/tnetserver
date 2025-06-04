@@ -264,7 +264,6 @@ TEST(server, fuzz1) {
 
     std::vector<std::thread> cmdThreads;
 
-
     for (int i = 0; i < 100; i++) {
         cmdThreads.emplace_back([&]() {
             auto lk = std::lock_guard(mtx);
