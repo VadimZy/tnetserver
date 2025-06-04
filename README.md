@@ -87,8 +87,19 @@ in terminal one start `tnetserver`
 ```sh
 [bin]$ ./tnetserver
 ```
-in terminal two ut app
+in terminal two start ut app `ut-tserver`
 ```bash
 [bin]$ export USE_EXTERNAL_TNETSERVER=1
 [bin]$ ./ut-tserver 
 ```
+
+<div hidden>
+```
+@startuml firstDiagram
+
+Alice -> Bob: Hello
+Bob -> Alice: Hi!
+
+@enduml
+```
+</div>
