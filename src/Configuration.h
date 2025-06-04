@@ -20,6 +20,7 @@ public:
     int epollEventsNum() const { return epollEventsNum_; }
     const std::string &hashType() const { return hashType_; }
     int readBufferSize() const { return readBufferSize_; }
+    const std::string &logLevel() const { return logLevel_; }
 
 private:
     Configuration() = default;

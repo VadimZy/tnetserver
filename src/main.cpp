@@ -34,6 +34,7 @@ int main() {
     util::log::logSink::setLevel("debug");
 
     Configuration::instance().loadFile(".tserver.cfg");
+    util::log::logSink::setLevel(Configuration::instance().logLevel());
 
     // create server
     gServer = std::make_shared<TcpServer>(2323, std::make_unique<HashEchoClientFactory>());
