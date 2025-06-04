@@ -93,13 +93,4 @@ in terminal two start ut app `ut-tserver`
 [bin]$ ./ut-tserver 
 ```
 
-<div hidden>
-```
-@startuml firstDiagram
-
-Alice -> Bob: Hello
-Bob -> Alice: Hi!
-
-@enduml
-```
-</div>
+![](./src/tserver_classes.svg)

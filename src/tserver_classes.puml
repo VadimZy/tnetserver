@@ -1,0 +1,33 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+interface ConnClient
+interface ClientFactory
+interface ConnMonitor
+interface HashDigest
+interface StreamDigest
+
+
+class HashEchoClient
+class MD5Digest
+class ClientStatsMonitor
+class HashEchoClientFactory
+class TcpServer
+class TaskManager
+
+ConnClient <|--HashEchoClient
+HashDigest <|-- MD5Digest
+StreamDigest <|-- StreamMD5Digest
+ConnMonitor <|-- ClientStatsMonitor
+ClientFactory <|-- HashEchoClientFactory
+
+TcpServer - ClientFactory : > create client
+TcpServer - ConnClient : > start
+TcpServer - TaskManager : > submit
+
+MD5Digest --o StreamMD5Digest
+StreamDigest --o HashEchoClient
+HashEchoClientFactory - HashEchoClient : > build
+HashEchoClient - ConnMonitor : > notify
+
+@enduml
