@@ -24,7 +24,8 @@ private:
     int server_fd{-1};
     int epoll_fd{-1};
 
-    std::atomic<bool> stop{false};
+    std::atomic<int> stop{0};
     std::unique_ptr<ClientFactory> clientFactory;
     std::unique_ptr<Poco::TaskManager> taskManager;
+
 };

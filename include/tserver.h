@@ -44,6 +44,7 @@ public:
     virtual void clientStatusChanged(int fd, ConnClient::State st, ConnClient::State old) = 0;
     virtual void clientDeleted(int fd) = 0;
     virtual void clientError(int fd, int errNo) = 0;
+    virtual void shutdown() = 0;
 };
 
 //

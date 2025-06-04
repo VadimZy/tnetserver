@@ -4,6 +4,7 @@
 
 #include "TcpServer.h"
 
+#include <csignal>
 #include <cstring>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -72,6 +73,14 @@ struct clientWrap : public Poco::Task {
 
 // epoll loop
 int TcpServer::run() {
+
+    struct exitGuard {
+        explicit exitGuard(std::atomic<int> &stop) : serverFd(stop) {}
+        ~exitGuard() { serverFd = 2; }
+        std::atomic<int> &serverFd;
+    };
+    exitGuard eg{stop};
+
     auto capacity = std::max(2, Configuration::instance().maxThreads());
     auto port = Configuration::instance().serverPort();
     auto eventsNum = Configuration::instance().epollEventsNum();
@@ -94,7 +103,6 @@ int TcpServer::run() {
 
     if (listen(server_fd, SOMAXCONN) < 0) {
         return logErrorReturn("server socket listen");
-        return -1;
     }
 
     if (epoll_fd = epoll_create1(0); epoll_fd < 0) {
@@ -111,16 +119,16 @@ int TcpServer::run() {
     LOG_INFO("starting HashEcho server on port: %d, maxThreads: %d, epollEventsNum: %d", port, capacity, eventsNum);
 
     while (!stop.load()) {
-        int n = epoll_wait(epoll_fd, events.data(), eventsNum, -1);
+        int n = epoll_wait(epoll_fd, events.data(), eventsNum, 100);
+
+        if (n == 0) {
+            continue;
+        }
 
         if (n < 0) {
             stop.store(true);
             LOG_ERROR("epoll wait error");
             break;
-        }
-
-        if (n == 0) {
-            continue;
         }
 
         for (int i = 0; i < n; ++i) {
@@ -135,7 +143,7 @@ int TcpServer::run() {
                 if (new_fd != -1) {
                     LOG_INFO("new client on port %d", port);
                     epoll_event client_event{};
-                    client_event.events = EPOLLIN;
+                    client_event.events = EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
                     client_event.data.fd = new_fd;
 
                     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &client_event) < 0) {
@@ -144,7 +152,7 @@ int TcpServer::run() {
                     } else {
                         LOG_DEBUG("fd: %d, creating new client, num active tasks: %d", new_fd, taskManager->count());
                         try {
-                            taskManager->start(new clientWrap(clientFactory->create(new_fd, connMonitor )));
+                            taskManager->start(new clientWrap(clientFactory->create(new_fd, connMonitor)));
                         } catch (const std::exception &e) {
                             LOG_ERROR("taskManager reached capacity: %s, terminating", e.what());
                             break;
@@ -163,13 +171,24 @@ int TcpServer::run() {
         }
     }
     close(server_fd);
+    close(epoll_fd);
     taskManager->cancelAll();
     taskManager->joinAll();
+    taskManager.reset();
     return 0;
 }
 
 // stop server and cleanup
 void TcpServer::shutdown() {
-    stop.store(true);
-    LOG_INFO("waiting for server shutdown");
+    LOG_INFO("server shutdown");
+    stop.store(1);
+    using namespace std::chrono_literals;
+    int i{0};
+    while (stop.load() != 2) {
+        if (i++ % 10 == 0) {
+            LOG_INFO("waiting for shutdown");
+        }
+        std::this_thread::sleep_for(100ms);
+    }
+    LOG_INFO("shutdown complete");
 }

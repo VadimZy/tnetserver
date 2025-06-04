@@ -102,14 +102,14 @@ TEST(buff_split, hash_stream) {
 // test server helper
 class TestTcpServer {
 public:
+    bool externServer{false};
+
     explicit TestTcpServer(int p): port(p) {
+        externServer = getenv("USE_EXTERNAL_TNETSERVER") != nullptr;
     }
 
     void start() {
-
-        const char* use_external = "USE_EXTERNAL_TNETSERVER";
-        char* env_var_value = getenv(use_external);
-        if (env_var_value != nullptr) {
+        if (externServer) {
             return;
         }
 
@@ -144,9 +144,9 @@ public:
 
     [[nodiscard]] std::string sendToServer(const std::string &str, int cnt = 1) const {
         std::stringstream ss;
-        ss << "echo " << str << " | nc localhost " << port;
+        ss << "echo " << str << " | nc -N localhost " << port;
         for (int i = 1; i < cnt; ++i) {
-            ss << "& echo " << str << " | nc localhost " << port;
+            ss << "& echo " << str << " | nc -N localhost " << port;
         }
 
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(ss.str().c_str(), "r"), pclose);
@@ -216,7 +216,7 @@ TEST(server, simple) {
 // 100 concurrent short strings, 3 connections
 TEST(server, fuzz) {
     TestTcpServer srv(2323);
-    //srv.start();
+    srv.start();
     using namespace std::chrono_literals;
     std::string tStr{8, 'q'};
     auto hex = to_hex(tStr, 3);
@@ -225,7 +225,6 @@ TEST(server, fuzz) {
     std::mutex mtx;
 
     std::vector<std::thread> cmdThreads;
-
 
     for (int i = 0; i < 100; i++) {
         cmdThreads.emplace_back([&]() {
