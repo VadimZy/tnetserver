@@ -18,8 +18,9 @@
 #include <sys/epoll.h>
 #include <unordered_set>
 
-#include "../util/Configuration.h"
 #include "../util/logger.h"
+#include "ClientStatsMonitor.h"
+#include "Configuration.h"
 #include "Poco/TaskManager.h"
 
 COMMON_LOGGER();
@@ -57,22 +58,25 @@ TcpServer::TcpServer(int port, std::unique_ptr<ClientFactory> cf) : clientFactor
     addr.sin_port = htons(port);
 }
 
+
 // dtor
 TcpServer::~TcpServer() { LOG_INFO("in Server destructor"); }
 
-struct cWrap : public Poco::Task {
-    explicit cWrap(ConnClient *c) : Task("conn"), client(c) {}
-    ~cWrap() override = default;
+// ConnClient wrapper to satisfy Poco::Task
+struct clientWrap : public Poco::Task {
+    explicit clientWrap(ConnClient *c) : Task("conn"), client(c) {}
+    ~clientWrap() override = default;
     void runTask() override { client->start(); };
     std::unique_ptr<ConnClient> client;
 };
 
+// epoll loop
 int TcpServer::run() {
-    auto capacity = std::max(2, util::Configuration::instance().maxThreads());
-    auto port = util::Configuration::instance().serverPort();
-    auto eventsNum = util::Configuration::instance().epollEventsNum();
+    auto capacity = std::max(2, Configuration::instance().maxThreads());
+    auto port = Configuration::instance().serverPort();
+    auto eventsNum = Configuration::instance().epollEventsNum();
     taskManager = std::make_unique<Poco::TaskManager>("connections", 2, capacity);
-
+    auto connMonitor = std::make_shared<ClientStatsMonitor>();
 
     auto logErrorReturn = [](const char *msg) {
         std::string err(strerror(errno));
@@ -140,7 +144,7 @@ int TcpServer::run() {
                     } else {
                         LOG_DEBUG("fd: %d, creating new client, num active tasks: %d", new_fd, taskManager->count());
                         try {
-                            taskManager->start(new cWrap(clientFactory->create(new_fd, *this)));
+                            taskManager->start(new clientWrap(clientFactory->create(new_fd, connMonitor )));
                         } catch (const std::exception &e) {
                             LOG_ERROR("taskManager reached capacity: %s, terminating", e.what());
                             break;
@@ -164,6 +168,7 @@ int TcpServer::run() {
     return 0;
 }
 
+// stop server and cleanup
 void TcpServer::shutdown() {
     stop.store(true);
     LOG_INFO("waiting for server shutdown");

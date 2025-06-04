@@ -13,7 +13,7 @@
 
 class HashEchoClient : public ConnClient {
 public:
-    HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d);
+    HashEchoClient(int fd, std::shared_ptr<ConnMonitor> m, std::unique_ptr<StreamDigest> d);
 
     ~HashEchoClient() override;
 
@@ -22,14 +22,11 @@ public:
     void stop() override;
 
 
-    ConnClient::State state() const override;
-
 private:
-    void handleIO();
 
     int fd{-1};
 
-    ConnManager &connMgr;
+    std::shared_ptr<ConnMonitor> connMonitor;
     std::unique_ptr<StreamDigest> digest;
 
     std::atomic_bool terminate{false};
@@ -45,5 +42,5 @@ private:
 class HashEchoClientFactory : public ClientFactory {
 public:
     ~HashEchoClientFactory() override = default;
-    ConnClient *create(int fd, ConnManager &m) override;
+    ConnClient *create(int fd, std::shared_ptr<ConnMonitor> m) override;
 };

@@ -10,7 +10,7 @@
 #include <Poco/Util/IniFileConfiguration.h>
 
 #include "../util/logger.h"
-#include "../util/Configuration.h"
+#include "Configuration.h"
 #include "HashEchoClient.h"
 #include "TcpServer.h"
 
@@ -33,7 +33,7 @@ int main() {
     util::log::logSink::useConsoleLog();
     util::log::logSink::setLevel("debug");
 
-    util::Configuration::instance().loadFile(".tserver.cfg");
+    Configuration::instance().loadFile(".tserver.cfg");
 
     // create server
     gServer = std::make_shared<TcpServer>(2323, std::make_unique<HashEchoClientFactory>());

@@ -12,13 +12,11 @@ namespace Poco {
     class TaskManager;
 }
 
-class TcpServer : public ConnManager {
+class TcpServer  {
 public:
-    explicit TcpServer(int port, std::unique_ptr<ClientFactory> cf);
+    TcpServer(int port, std::unique_ptr<ClientFactory> cf);
 
-    ~TcpServer() override;
-
-    void clientDisconnected(int fd) override{};
+    ~TcpServer() ;
 
     int run();
     void shutdown();

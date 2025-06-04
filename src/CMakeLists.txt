@@ -11,7 +11,9 @@ add_executable(tnetserver main.cpp
         ../util/logger.h
         ../util/util.cpp
         ../util/util.h
-        ../util/Configuration.cpp
-        ../util/Configuration.h)
+        Configuration.cpp
+        Configuration.h
+        ClientStatsMonitor.h
+        ClientStatsMonitor.cpp)
 
 target_link_libraries(tnetserver PRIVATE Poco::Foundation Poco::Util ssl crypto)

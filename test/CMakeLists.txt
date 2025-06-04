@@ -8,8 +8,8 @@ add_executable(ut-tserver
         ../../src/HashEchoClient.cpp
         ../../src/DigestGenerators.cpp
         ../../util/logger.cpp
-        ../util/Configuration.cpp
-        ../util/Configuration.h
+        ../src/Configuration.cpp
+        ../src/Configuration.h
 )
 
 include(FetchContent)

@@ -1,8 +1,9 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <memory>
 
-//
+// digest generator interface
 class HashDigest {
 public:
     virtual ~HashDigest() = default;
@@ -11,6 +12,7 @@ public:
     virtual void reset() = 0;
 };
 
+// streaming digest interface
 class StreamDigest {
 public:
     virtual ~StreamDigest() = default;
@@ -18,6 +20,7 @@ public:
     virtual void reset() = 0;
 };
 
+// connection client interface
 class ConnClient {
 public:
     enum class State {
@@ -31,18 +34,21 @@ public:
     virtual ~ConnClient() = default;
     virtual int start() = 0;
     virtual void stop() = 0;
-    virtual State state() const = 0;
 };
 
-class ConnManager {
+//
+class ConnMonitor {
 public:
-    virtual ~ConnManager() = default;
-
-    virtual void clientDisconnected(int fd) = 0;
+    virtual ~ConnMonitor() = default;
+    virtual void clientCreated(int fd) = 0;
+    virtual void clientStatusChanged(int fd, ConnClient::State st, ConnClient::State old) = 0;
+    virtual void clientDeleted(int fd) = 0;
+    virtual void clientError(int fd, int errNo) = 0;
 };
 
+//
 class ClientFactory {
 public:
     virtual ~ClientFactory() = default;
-    virtual ConnClient *create(int fd, ConnManager &m) = 0;
+    virtual ConnClient *create(int fd, std::shared_ptr<ConnMonitor> m) = 0;
 };
