@@ -106,10 +106,20 @@ public:
     }
 
     void start() {
+
+        const char* use_external = "USE_EXTERNAL_TNETSERVER";
+        char* env_var_value = getenv(use_external);
+        if (env_var_value != nullptr) {
+            return;
+        }
+
         spid = fork();
         if (spid == 0) {
             serverPtr = std::make_shared<TcpServer>(2323, std::make_unique<HashEchoClientFactory>());
             serverThreadPtr = std::make_unique<std::thread>([&]() { serverPtr->run(); });
+        } else {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(3s);
         }
     }
 
@@ -119,28 +129,38 @@ public:
             spid = -1;
         }
         if (serverThreadPtr) {
-            serverPtr->shutdown();
             serverThreadPtr->join();
         }
     }
 
-    std::string sendToServer(const std::string &str, int cnt = 1) {
+    [[nodiscard]] std::string sendToServerAsync(const std::string &str, int cnt = 1) const {
+        std::string result;
+        auto t = std::thread([&]() {
+            result = sendToServer(str, cnt);
+        });
+        t.join();
+        return result;
+    }
+
+    [[nodiscard]] std::string sendToServer(const std::string &str, int cnt = 1) const {
         std::stringstream ss;
         ss << "echo " << str << " | nc localhost " << port;
         for (int i = 1; i < cnt; ++i) {
             ss << "& echo " << str << " | nc localhost " << port;
         }
 
-        std::string result{};
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(ss.str().c_str(), "r"), pclose);
         if (!pipe) {
             LOG_ERROR("broken pipe");
             return {};
         }
+
+        std::string result{};
         char buffer[128];
         while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
             result += buffer;
         }
+
         return result;
     }
 
@@ -172,6 +192,7 @@ auto to_hex(const std::string &s, int cnt = 1) {
 // smoke test
 TEST(server, simple) {
     TestTcpServer srv(2323);
+    srv.start();
     using namespace std::chrono_literals;
 
     std::string tStr = "qqqqqqq";
@@ -180,7 +201,7 @@ TEST(server, simple) {
     bool good = true;
 
     for (int i = 0; i < 100; i++) {
-        LOG_INFO("\n  === task: %d === \n", i);
+        //LOG_INFO("\n  === task: %d === \n", i);
         auto res = srv.sendToServer(tStr);
         good = hex == res;
         if (!good) {
@@ -234,10 +255,10 @@ TEST(server, fuzz) {
 // 100 concurrent long strings, 10 connections
 TEST(server, fuzz1) {
     TestTcpServer srv(2323);
-    //srv.start();
+    srv.start();
     using namespace std::chrono_literals;
     std::string tStr(4000, 'q');
-    auto hex = to_hex(tStr,10);
+    auto hex = to_hex(tStr, 10);
 
     std::vector<std::string> results;
     std::mutex mtx;
@@ -248,7 +269,7 @@ TEST(server, fuzz1) {
     for (int i = 0; i < 100; i++) {
         cmdThreads.emplace_back([&]() {
             auto lk = std::lock_guard(mtx);
-            results.emplace_back(srv.sendToServer(tStr,10));
+            results.emplace_back(srv.sendToServer(tStr, 10));
         });
     }
 

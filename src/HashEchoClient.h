@@ -5,11 +5,9 @@
 #pragma once
 #include <iostream>
 #include <thread>
-#include <utility>
 
 #include <condition_variable>
 #include "../include/tserver.h"
-#include "Poco/Task.h"
 
 class HashEchoClient : public ConnClient {
 public:

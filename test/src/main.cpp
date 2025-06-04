@@ -43,8 +43,8 @@ public:
 int main(int argc, char* argv[]) {
 
     // setup logger
-    util::log::log_sink::use_console_log();
-    util::log::log_sink::set_level("debug");
+    util::log::logSink::useConsoleLog();
+    util::log::logSink::setLevel("debug");
 
     LOG_INFO("Starting testing");
 
