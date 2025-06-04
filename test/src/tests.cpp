@@ -103,9 +103,26 @@ TEST(buff_split, hash_stream) {
 class TestTcpServer {
 public:
     bool externServer{false};
+    std::string ncOption;// = " -N ";
 
     explicit TestTcpServer(int p): port(p) {
+
+        //check if run with external server
         externServer = getenv("USE_EXTERNAL_TNETSERVER") != nullptr;
+
+        // check nc version
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("echo test | nc  -N localhost 2>&1", "r"), pclose);
+
+        std::string result{};
+        char buffer[128];
+        while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
+            result += buffer;
+        }
+
+        if (result.find("invalid option") != std::string::npos) {
+            ncOption.clear();
+        }
+
     }
 
     void start() {
@@ -144,9 +161,9 @@ public:
 
     [[nodiscard]] std::string sendToServer(const std::string &str, int cnt = 1) const {
         std::stringstream ss;
-        ss << "echo " << str << " | nc -N localhost " << port;
+        ss << "echo " << str << " | nc " << ncOption << " localhost " << port;
         for (int i = 1; i < cnt; ++i) {
-            ss << "& echo " << str << " | nc -N localhost " << port;
+            ss << "& echo " << str << " | nc " << ncOption << " localhost " << port;
         }
 
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(ss.str().c_str(), "r"), pclose);
