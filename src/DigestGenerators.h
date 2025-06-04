@@ -7,6 +7,7 @@
 #include "../include/tserver.h"
 #include "Poco/MD5Engine.h"
 
+// concrete hash digest provider
 class MD5Digest : public HashDigest {
 public:
     MD5Digest() = default;
@@ -24,6 +25,7 @@ private:
 };
 
 
+// concrete stream digest provider
 class StreamMD5Digest : public StreamDigest {
 public:
     explicit StreamMD5Digest(char sep) : separator(sep) {}

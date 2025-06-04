@@ -29,8 +29,6 @@ namespace {
 
 int main() {
 
-
-
     // setup logger
     util::log::log_sink::use_console_log();
     util::log::log_sink::set_level("debug");

@@ -28,36 +28,18 @@
 
 #include "../util/Configuration.h"
 #include "DigestGenerators.h"
-#include "Poco/MD5Engine.h"
 
 
 COMMON_LOGGER();
 
-
 HashEchoClient::HashEchoClient(int fd, ConnManager &m, std::unique_ptr<StreamDigest> d) :
-    connMgr(m), fd(fd), digest(std::move(d)), id(nextId()) {
+    connMgr(m), fd(fd), digest(std::move(d)) {
     LOG_INFO("client: %lu, id, fd: %d, constructing", id, fd);
 }
 
 HashEchoClient::~HashEchoClient() { std::cout << "dtor client: " << id << "\n"; }
 
 int HashEchoClient::start() {
-
-    handleIO();
-    return 0;
-}
-
-void HashEchoClient::stop() {
-    LOG_INFO("client: %lu, id, fd: %d, stopping client", id, fd);
-    terminate.store(true);
-}
-
-void HashEchoClient::onData() { LOG_INFO("client: %lu, id, fd: %d, data", id, fd); }
-
-ConnClient::State HashEchoClient::state() const { return mState; }
-
-void HashEchoClient::handleIO() {
-
     static size_t buffSize = util::Configuration::instance().readBufferSize();
     std::vector<char> buffer(buffSize);
 
@@ -92,7 +74,15 @@ void HashEchoClient::handleIO() {
 
     LOG_INFO("client: %lu, id, fd: %d, completed", id, fd);
     mState = State::COMPLETED;
+    return 0;
 }
+
+void HashEchoClient::stop() {
+    LOG_INFO("client: %lu, id, fd: %d, stopping client", id, fd);
+    terminate.store(true);
+}
+
+ConnClient::State HashEchoClient::state() const { return mState; }
 
 
 ConnClient *HashEchoClientFactory::create(int fd, ConnManager &m) {

@@ -21,25 +21,25 @@ public:
 
     void stop() override;
 
-    void onData() override;
 
     ConnClient::State state() const override;
 
 private:
     void handleIO();
 
-    static Poco::TaskManager &pool();
+    int fd{-1};
 
     ConnManager &connMgr;
-    int fd{-1};
-    std::atomic_bool terminate{false};
     std::unique_ptr<StreamDigest> digest;
+
+    std::atomic_bool terminate{false};
     std::atomic<State> mState{State::CREATED};
+
     static uint64_t nextId() {
         static std::atomic<uint64_t> _{0};
         return _.fetch_add(1);
     }
-    uint64_t id{0};
+    uint64_t id{nextId()};
 };
 
 class HashEchoClientFactory : public ClientFactory {

@@ -14,13 +14,16 @@
 #include <vector>
 
 namespace util::log {
+
+    // default buffer size
+    // should fit most log strings without resizing
     constexpr size_t DEFAULT_LOG_STR_LENGTH = 512;
 
     inline std::string mk_prefix(const std::string &file_name, const int line_no) {
         return std::string{}.append(file_name).append(":").append(std::to_string(line_no));
     }
 
-    // the code below compiled form agent's common logger
+    // log string generating
     void log_sink::logv(log_severity sev, const int line_no, const char *fmt, va_list &args) const {
         auto try_print = [&](auto &buffer, size_t buff_size) {
             va_list mutable_args;
@@ -83,6 +86,8 @@ namespace util::log {
         }
         return false;
     }
+
+    // default log sink
     void log_sink::use_console_log() {
         log_fn = []
                 // logger function
@@ -92,8 +97,9 @@ namespace util::log {
                     char ts[std::size("yyyy-mm-ddThh:mm:ss")];
                     std::strftime(std::data(ts), std::size(ts), "%FT%T", std::gmtime(&tv.tv_sec));
                     std::stringstream ss;
-                    ss << ts << "." << tv.tv_usec / 1000 << ", " << std::this_thread::get_id() << ", "
-                       << util::log::log_sink::LOG_LEVELS[sev - 1] << ", " << component << message << "\n";
+                    ss << ts << "." << std::setfill('0') << std::setw(3) << tv.tv_usec / 1000 << ", "
+                       << std::this_thread::get_id() << ", " << LOG_LEVELS[sev - 1] << ", "
+                       << component << message << "\n";
                     std::cout << ss.str();
                 };
     }

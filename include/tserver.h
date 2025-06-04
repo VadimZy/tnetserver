@@ -2,6 +2,7 @@
 #include <functional>
 #include <string>
 
+//
 class HashDigest {
 public:
     virtual ~HashDigest() = default;
@@ -24,12 +25,12 @@ public:
         RUNNING,
         COMPLETED,
         FAILED,
+        DESTROYED,
     };
 
     virtual ~ConnClient() = default;
     virtual int start() = 0;
     virtual void stop() = 0;
-    virtual void onData() = 0;
     virtual State state() const = 0;
 };
 
