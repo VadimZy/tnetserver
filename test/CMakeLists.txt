@@ -14,6 +14,11 @@ add_executable(ut-tserver
         ../src/Configuration.h
 )
 
+set(ENABLE_PAGECOMPILER OFF)
+set(ENABLE_PAGECOMPILER_FILE2PAGE OFF)
+set(ENABLE_ACTIVERECORD OFF)
+set(ENABLE_ACTIVERECORD_COMPILER OFF)
+
 include(FetchContent)
 
 FetchContent_Declare(
