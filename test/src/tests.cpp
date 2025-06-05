@@ -103,7 +103,7 @@ TEST(buff_split, hash_stream) {
 class TestTcpServer {
 public:
     bool externServer{false};
-    std::string ncOption;// = " -N ";
+    std::string ncOption = " -N ";
 
     explicit TestTcpServer(int p): port(p) {
 
