@@ -21,13 +21,13 @@ StreamDigest <|-- StreamMD5Digest
 ConnMonitor <|-- ClientStatsMonitor
 ClientFactory <|-- HashEchoClientFactory
 
-TcpServer - ClientFactory : > create client
+TcpServer o-> ClientFactory : > create client
 TcpServer - ConnClient : > start
-TcpServer - TaskManager : > submit
+TcpServer o- TaskManager : > submit
 
 MD5Digest --o StreamMD5Digest
 StreamDigest --o HashEchoClient
-HashEchoClientFactory - HashEchoClient : > build
+HashEchoClientFactory - HashEchoClient : > create
 HashEchoClient - ConnMonitor : > notify
 
 @enduml
