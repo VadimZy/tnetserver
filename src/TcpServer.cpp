@@ -175,6 +175,7 @@ int TcpServer::run() {
     taskManager->cancelAll();
     taskManager->joinAll();
     taskManager.reset();
+    connMonitor->shutdown();
     return 0;
 }
 
