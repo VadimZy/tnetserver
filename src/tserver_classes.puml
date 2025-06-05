@@ -28,6 +28,6 @@ TcpServer o- TaskManager : > submit
 MD5Digest --o StreamMD5Digest
 StreamDigest --o HashEchoClient
 HashEchoClientFactory - HashEchoClient : > create
-HashEchoClient - ConnMonitor : > notify
+HashEchoClient o- ConnMonitor : > notify
 
 @enduml
