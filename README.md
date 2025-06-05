@@ -93,4 +93,4 @@ in terminal two start ut app `ut-tserver`
 [bin]$ ./ut-tserver 
 ```
 
-![] ./src/tserver_classes.svg "classes"
+![](./src/tserver_classes.svg)
