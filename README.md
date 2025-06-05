@@ -5,12 +5,17 @@ A simple TCP ipv4 server that listens on a configured port (default: 2323) and r
 - Multithreaded read: each connected client is served with a read task that that runs in a software thread.
 - Streaming hash calculation: the reader incrementaly updateds hash with the bytes read from the socket, thus it does not need to receive full line to calculate the hash
 
+### brief class diagramm
+
+![](./src/tserver_classes.svg)
+
+
 ## Building
 > Prerequisites
 - cmake 3.24+
 - gnu make
 - gcc/g++ capable of C++ 20
-- openssv 3.0+ (sudo apt-get install libssl-dev)
+- openssl 3.0+ (sudo apt-get install libssl-dev)
 
 > Dependencies
 
@@ -92,5 +97,3 @@ in terminal two start ut app `ut-tserver`
 [bin]$ export USE_EXTERNAL_TNETSERVER=1
 [bin]$ ./ut-tserver 
 ```
-
-![](./src/tserver_classes.svg)
