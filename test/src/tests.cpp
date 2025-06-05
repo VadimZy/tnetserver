@@ -119,8 +119,10 @@ public:
             result += buffer;
         }
 
-        if (result.find("invalid option") != std::string::npos) {
+        LOG_INFO("check version result: %s", result.c_str() );
+        if (result.find("invalid") != std::string::npos) {
             ncOption.clear();
+            LOG_INFO("clearing the ncOption: %s", ncOption.c_str() );
         }
 
     }
