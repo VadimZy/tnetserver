@@ -2,7 +2,7 @@
 A simple TCP ipv4 server that listens on a configured port (default: 2323) and responses with a hash calculated for each input line.
 
 ## Features
-- Multithreaded read: each connected client is served with a read task that that runs in a software thread.
+- Multithreaded read: each connected client is served with a read task that runs in a software thread.
 - Streaming hash calculation: the reader incrementaly updateds hash with the bytes read from the socket, thus it does not need to receive full line to calculate the hash
 
 ### brief class diagramm
