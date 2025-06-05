@@ -97,3 +97,38 @@ in terminal two start ut app `ut-tserver`
 [bin]$ export USE_EXTERNAL_TNETSERVER=1
 [bin]$ ./ut-tserver 
 ```
+<b>second UT option with valgrind</b>
+```bash
+[]$ valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./bin/tnetserver
+```
+
+```text
+==33038== 
+==33038== FILE DESCRIPTORS: 3 open (3 inherited) at exit.
+==33038== 
+==33038== HEAP SUMMARY:
+==33038==     in use at exit: 304 bytes in 1 blocks
+==33038==   total heap usage: 50,734 allocs, 50,733 frees, 8,350,668 bytes allocated
+==33038== 
+==33038== 304 bytes in 1 blocks are possibly lost in loss record 1 of 1
+==33038==    at 0x48650DC: calloc (vg_replace_malloc.c:1675)
+==33038==    by 0x40297D9: calloc (rtld-malloc.h:44)
+==33038==    by 0x40297D9: allocate_dtv (dl-tls.c:375)
+==33038==    by 0x40297D9: _dl_allocate_tls (dl-tls.c:634)
+==33038==    by 0x4EFF7B4: allocate_stack (allocatestack.c:430)
+==33038==    by 0x4EFF7B4: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
+==33038==    by 0x4CF8328: std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30)
+==33038==    by 0x4006F31: thread<main()::<lambda()> > (std_thread.h:143)
+==33038==    by 0x4006F31: main (main.cpp:58)
+==33038== 
+==33038== LEAK SUMMARY:
+==33038==    definitely lost: 0 bytes in 0 blocks
+==33038==    indirectly lost: 0 bytes in 0 blocks
+==33038==      possibly lost: 304 bytes in 1 blocks
+==33038==    still reachable: 0 bytes in 0 blocks
+==33038==         suppressed: 0 bytes in 0 blocks
+==33038== 
+==33038== For lists of detected and suppressed errors, rerun with: -s
+==33038== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+
+```
